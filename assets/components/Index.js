@@ -3,6 +3,7 @@ import { Button, Rating, Spinner } from 'flowbite-react';
 
 const Index = props => {
   const [movies, setMovies] = useState([]);
+  const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchMovies = () => {
@@ -11,11 +12,31 @@ const Index = props => {
     return fetch('/api/movies')
       .then(response => response.json())
       .then(data => {
+        const movies = data.movies;
+        const genres = Array.from(new Set(movies.flatMap(movie => movie.genres.split(',').map(genre => genre.trim()))));
+        setMovies(movies);
+        setGenres(genres);
+        setLoading(false);
+
+      });
+
+  }
+
+  /*   creo la funzione che mi filtra i film in base al genere selezionato */
+  const filterMoviesByGenre = (genreId) => {
+    setLoading(true);
+    
+    return fetch(`/api/movies/genre/${genreId}`)
+      .then(response => response.json())
+      .then(data => {
         setMovies(data.movies);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error(error);
         setLoading(false);
       });
   }
-
   useEffect(() => {
     fetchMovies();
   }, []);
@@ -23,6 +44,34 @@ const Index = props => {
   return (
     <Layout>
       <Heading />
+      <div className="flex flex-wrap gap-2 justify-center mb-5">
+        {/* dopo il fetch ciclo sui generi e stampo un bottone per ognuno che richiama una funzione per filtrare e ha come argomento lo stesso valore del bottone */}
+        {genres.map(genre => (
+          <div key={genre}>
+            <Button
+              color="gray"
+              pill={true}
+              onClick={() => filterMoviesByGenre(genre)}
+            >
+              {genre}
+            </Button>
+          </div>
+        ))}
+
+      </div>
+      <div className="flex flex-wrap gap-2 justify-center mb-5">
+      {/*   bottone per rifare il fetch  */}
+      <Button
+              color="gray"
+              pill={true}
+              onClick={() => fetchMovies()}
+              style={{ display: loading ? 'none' : 'block' }}
+            >
+              all movie
+            </Button>
+      </div>
+
+
 
       <MovieList loading={loading}>
         {movies.map((item, key) => (
@@ -44,6 +93,7 @@ const Layout = props => {
 };
 
 const Heading = props => {
+  const { genres } = props;
   return (
     <div className="mx-auto max-w-screen-sm text-center mb-8 lg:mb-16">
       <h1 className="mb-4 text-4xl tracking-tight font-extrabold text-gray-900 dark:text-white">
@@ -53,6 +103,8 @@ const Heading = props => {
       <p className="font-light text-gray-500 lg:mb-16 sm:text-xl dark:text-gray-400">
         Explore the whole collection of movies
       </p>
+
+
     </div>
   );
 };
@@ -89,19 +141,19 @@ const MovieItem = props => {
         <div className="grow mb-3 last:mb-0">
           {props.year || props.rating
             ? <div className="flex justify-between align-middle text-gray-900 text-xs font-medium mb-2">
-                <span>{props.year}</span>
+              <span>{props.year}</span>
 
-                {props.rating
-                  ? <Rating>
-                      <Rating.Star />
+              {props.rating
+                ? <Rating>
+                  <Rating.Star />
 
-                      <span className="ml-0.5">
-                        {props.rating}
-                      </span>
-                    </Rating>
-                  : null
-                }
-              </div>
+                  <span className="ml-0.5">
+                    {props.rating}
+                  </span>
+                </Rating>
+                : null
+              }
+            </div>
             : null
           }
 
@@ -116,13 +168,13 @@ const MovieItem = props => {
 
         {props.wikipedia_url
           ? <Button
-              color="light"
-              size="xs"
-              className="w-full"
-              onClick={() => window.open(props.wikipedia_url, '_blank')}
-            >
-              More
-            </Button>
+            color="light"
+            size="xs"
+            className="w-full"
+            onClick={() => window.open(props.wikipedia_url, '_blank')}
+          >
+            More
+          </Button>
           : null
         }
       </div>
